@@ -314,7 +314,7 @@
        "tensorflow": {
             "aliases": ["tensorflow"],
             "repos": {
-                "llvm-project": "9dff18bd34c6d4e60eeb4b0d730938d370b7ad1c",
+                "llvm-project": "fd0bfd9f4c5f071786d81f87fee0693b8a1246fe",
                 "swift": "tensorflow",
                 "cmark": "swift-DEVELOPMENT-SNAPSHOT-2020-03-18-a",
                 "llbuild": "swift-DEVELOPMENT-SNAPSHOT-2020-03-18-a",
