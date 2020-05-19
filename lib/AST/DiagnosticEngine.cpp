@@ -20,6 +20,7 @@
 #include "swift/AST/ASTPrinter.h"
 #include "swift/AST/Decl.h"
 #include "swift/AST/DiagnosticSuppression.h"
+#include "swift/AST/DiagnosticMessagesFormat.h"
 #include "swift/AST/Module.h"
 #include "swift/AST/Pattern.h"
 #include "swift/AST/PrintOptions.h"
@@ -33,6 +34,7 @@
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Format.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Support/YAMLParser.h"
 
 using namespace swift;
 
@@ -966,9 +968,13 @@ DiagnosticEngine::diagnosticInfoForDiagnostic(const Diagnostic &diagnostic) {
     }
   }
 
+  std::string diagnosticMessagesPath = getDiagnosticMessagesPath() + "/";
+  diagnosticMessagesPath += getDiagnosticLocaleCode() + ".yaml";
+
   return DiagnosticInfo(
       diagnostic.getID(), loc, toDiagnosticKind(behavior),
-      diagnosticStringFor(diagnostic.getID(), getPrintDiagnosticNames()),
+      diagnosticStringFor(diagnostic.getID(), getPrintDiagnosticNames(),
+                          diagnosticMessagesPath, getDiagnosticLocaleCode()),
       diagnostic.getArgs(), getDefaultDiagnosticLoc(), /*child note info*/ {},
       diagnostic.getRanges(), diagnostic.getFixIts(), diagnostic.isChildNote());
 }
@@ -1009,14 +1015,28 @@ void DiagnosticEngine::emitDiagnostic(const Diagnostic &diagnostic) {
     emitDiagnostic(childNote);
 }
 
-const char *DiagnosticEngine::diagnosticStringFor(const DiagID id,
-                                                  bool printDiagnosticName) {
+std::string
+DiagnosticEngine::diagnosticStringFor(const DiagID id,
+                                      bool printDiagnosticName,
+                                      std::string diagnosticMessagesPath,
+                                      std::string localeCode) {
   if (printDiagnosticName) {
     return debugDiagnosticStrings[(unsigned)id];
   }
+  if (localeCode != "") {
+    std::vector<DiagnosticNode> diagnostics;
+    llvm::MemoryBuffer *document = nullptr;
+    auto FileBufOrErr = llvm::MemoryBuffer::getFileOrSTDIN(diagnosticMessagesPath);
+    if (!FileBufOrErr) {
+      printf("Error\n");
+    }
+    document = FileBufOrErr->get();
+    llvm::yaml::Input yin(document->getBuffer());
+    yin >> diagnostics;
+    return diagnostics[(unsigned)id].msg;
+  }
   return diagnosticStrings[(unsigned)id];
 }
-
 const char *InFlightDiagnostic::fixItStringFor(const FixItID id) {
   return fixItStrings[(unsigned)id];
 }

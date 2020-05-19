@@ -370,6 +370,14 @@ def debug_diagnostic_names : Flag<["-"], "debug-diagnostic-names">,
 def print_educational_notes : Flag<["-"], "print-educational-notes">,
   Flags<[FrontendOption, DoesNotAffectIncrementalBuild]>,
   HelpText<"Include educational notes in printed diagnostic output, if available">;
+def locale : Separate<["-"], "locale">,
+  Flags<[FrontendOption, DoesNotAffectIncrementalBuild]>,
+  HelpText<"Choose a language for diagnostic messages">,
+  MetaVarName<"<locale-code>">;
+def diagnostic_messages_path : Separate<["-"], "diagnostic-messages-path">,
+  Flags<[FrontendOption, DoesNotAffectIncrementalBuild]>,
+  HelpText<"Path to diagnostic messages directory">,
+  MetaVarName<"<path>">;
 
 def module_cache_path : Separate<["-"], "module-cache-path">,
   Flags<[FrontendOption, DoesNotAffectIncrementalBuild, ArgumentIsPath]>,

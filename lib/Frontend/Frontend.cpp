@@ -408,6 +408,10 @@ void CompilerInstance::setUpDiagnosticOptions() {
   }
   Diagnostics.setDiagnosticDocumentationPath(
       Invocation.getDiagnosticOptions().DiagnosticDocumentationPath);
+  Diagnostics.setDiagnosticMessagesPath(
+      Invocation.getDiagnosticOptions().DiagnosticMessagesPath);
+  Diagnostics.setDiagnosticLocaleCode(
+      Invocation.getDiagnosticOptions().DiagnosticLocaleCode);
 }
 
 // The ordering of ModuleLoaders is important!

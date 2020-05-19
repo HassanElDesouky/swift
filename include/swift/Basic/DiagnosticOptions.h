@@ -64,6 +64,11 @@ public:
   bool EnableExperimentalFormatting = false;
 
   std::string DiagnosticDocumentationPath = "";
+  
+  std::string DiagnosticLocaleCode = "";
+
+  // Diagnostic messages directory path.
+  std::string DiagnosticMessagesPath = "";
 
   /// Return a hash code of any components from these options that should
   /// contribute to a Swift Bridging PCH hash.

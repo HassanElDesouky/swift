@@ -679,6 +679,12 @@ namespace swift {
     /// Path to diagnostic documentation directory.
     std::string diagnosticDocumentationPath = "";
 
+    /// Diagnostic messages language code.
+    std::string diagnosticLocaleCode = "";
+    
+    /// Diagnostic messages directory path.
+    std::string diagnosticMessagesPath = "";
+
     friend class InFlightDiagnostic;
     friend class DiagnosticTransaction;
     friend class CompoundDiagnosticTransaction;
@@ -732,6 +738,20 @@ namespace swift {
     }
     StringRef getDiagnosticDocumentationPath() {
       return diagnosticDocumentationPath;
+    }
+
+    void setDiagnosticLocaleCode(std::string locale) {
+      diagnosticLocaleCode = locale;
+    }
+    std::string getDiagnosticLocaleCode() {
+      return diagnosticLocaleCode;
+    }
+    
+    void setDiagnosticMessagesPath(std::string path) {
+      diagnosticMessagesPath = path;
+    }
+    std::string getDiagnosticMessagesPath() {
+      return diagnosticMessagesPath;
     }
 
     void ignoreDiagnostic(DiagID id) {
@@ -955,9 +975,11 @@ namespace swift {
     void emitTentativeDiagnostics();
 
   public:
-    static const char *diagnosticStringFor(const DiagID id,
-                                           bool printDiagnosticName);
-
+    static std::string diagnosticStringFor(const DiagID id,
+                                           bool printDiagnosticName,
+                                           std::string diagnosticMessagesPath,
+                                           std::string localeCode);   
+    
     /// If there is no clear .dia file for a diagnostic, put it in the one
     /// corresponding to the SourceLoc given here.
     /// In particular, in batch mode when a diagnostic is located in
