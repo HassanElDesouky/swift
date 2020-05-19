@@ -15,11 +15,12 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/Support/YAMLTraits.h"
+#include "DiagnosticList.cpp"
 
 namespace swift {
 
 struct DiagnosticNode {
-  std::string diag_id;
+  DiagID diag_id;
   std::string msg;
 };
 
@@ -27,6 +28,14 @@ struct DiagnosticNode {
 
 namespace llvm {
 namespace yaml {
+
+template<>
+struct ScalarEnumerationTraits<swift::DiagID> {
+  static void enumeration(IO &io, swift::DiagID &value) {
+#define DIAG(KIND,ID,Options,Text,Signature) io.enumCase(value, #ID, swift::DiagID::ID);
+#include "swift/AST/DiagnosticsAll.def"
+  }
+};
 
 template <>
 struct MappingTraits<swift::DiagnosticNode> {
