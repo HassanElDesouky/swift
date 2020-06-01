@@ -35,6 +35,7 @@
 #include "llvm/Support/Format.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/YAMLParser.h"
+#include <iostream>
 
 using namespace swift;
 
@@ -311,6 +312,47 @@ void Diagnostic::addChildNote(Diagnostic &&D) {
   assert(storedDiagnosticInfos[(unsigned)ID].kind != DiagnosticKind::Note &&
          "Notes can't have children.");
   ChildNotes.push_back(std::move(D));
+}
+
+// ******Dummy for testing********
+YAMLDiagnosticProvider::YAMLDiagnosticProvider(std::string locale,
+                                               std::string path) {
+  std::cout << "Hello\n";
+  std::string YAMLDiagnosticsFilePath = path + "\\" + locale + ".yaml";
+  std::cout << YAMLDiagnosticsFilePath << std::endl;
+}
+
+YAMLDiagnosticProvider::YAMLDiagnosticProvider() {
+  std::cout << "Hello1\n";
+  
+  std::string YAMLDiagnosticsFilePath = getDiagnosticMessagesPath()
+                                        + "\\"
+                                        + getDiagnosticLocaleCode() + ".yaml";
+  std::cout << YAMLDiagnosticsFilePath << std::endl;
+  auto FileBufOrErr = llvm::MemoryBuffer::getFileOrSTDIN(YAMLDiagnosticsFilePath);
+  if (!FileBufOrErr)
+    llvm_unreachable("Failed to read yaml file");
+  
+  std::vector<DiagnosticNode> Diags;
+  llvm::MemoryBuffer *document = FileBufOrErr->get();
+  llvm::yaml::Input yin(document->getBuffer());
+  yin >> Diags;
+  
+  // Get the size of the diagnostic strings from the `.def` files.
+  int defDiagnosticStringSize =
+  sizeof(diagnosticStrings) / sizeof(*diagnosticStrings);
+  
+  // Resize Diags from YAML file to be the same size
+  // as diagnosticStrings from def files.
+  Diags.resize(defDiagnosticStringSize);
+  assert((int) Diags.size() == defDiagnosticStringSize);
+  
+  // Sort diagnostics parsed from the YAML file,
+  // so when retreiving diagnostic messages by position i.e. `(unsigned)diagID`
+  // it will return the correct message.
+  std::sort(Diags.begin(), Diags.end());
+  
+  diagnostics = Diags;
 }
 
 bool DiagnosticEngine::isDiagnosticPointsToFirstBadToken(DiagID ID) const {
@@ -974,7 +1016,7 @@ DiagnosticEngine::diagnosticInfoForDiagnostic(const Diagnostic &diagnostic) {
   return DiagnosticInfo(
       diagnostic.getID(), loc, toDiagnosticKind(behavior),
       diagnosticStringFor(diagnostic.getID(), getPrintDiagnosticNames(),
-                          diagnosticMessagesPath, getDiagnosticLocaleCode()),
+                          getDiagnosticLocaleCode()),
       diagnostic.getArgs(), getDefaultDiagnosticLoc(), /*child note info*/ {},
       diagnostic.getRanges(), diagnostic.getFixIts(), diagnostic.isChildNote());
 }
@@ -1018,22 +1060,20 @@ void DiagnosticEngine::emitDiagnostic(const Diagnostic &diagnostic) {
 std::string
 DiagnosticEngine::diagnosticStringFor(const DiagID id,
                                       bool printDiagnosticName,
-                                      std::string diagnosticMessagesPath,
                                       std::string localeCode) {
   if (printDiagnosticName) {
     return debugDiagnosticStrings[(unsigned)id];
   }
   if (localeCode != "") {
-    std::vector<DiagnosticNode> diagnostics;
-    llvm::MemoryBuffer *document = nullptr;
-    auto FileBufOrErr = llvm::MemoryBuffer::getFileOrSTDIN(diagnosticMessagesPath);
-    if (!FileBufOrErr) {
-      printf("Error\n");
-    }
-    document = FileBufOrErr->get();
-    llvm::yaml::Input yin(document->getBuffer());
-    yin >> diagnostics;
-    return diagnostics[(unsigned)id].msg;
+    std::string diagnosticMessage =
+    YAMLDiagnostics.diagnostics[(unsigned)id].msg;
+    
+    // If the message isn't available in the current `yaml` file,
+    // return the message from the `.def` file.
+    if (diagnosticMessage == "")
+      return diagnosticStrings[(unsigned)id];;
+    
+    return diagnosticMessage;
   }
   return diagnosticStrings[(unsigned)id];
 }

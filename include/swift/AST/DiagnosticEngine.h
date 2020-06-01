@@ -58,6 +58,16 @@ namespace swift {
     DiagID ID;
   };
 
+  struct DiagnosticNode {
+    DiagID diag_id; // Will be changed to `id` insted of `idag_id`
+    std::string msg;
+    
+    /// `<` sign operator overloading to make the `DiagnosticNode` struct supports `std::sort`
+    bool operator < (const DiagnosticNode& node) const {
+      return diag_id < node.diag_id;
+    }
+  };  
+
   namespace detail {
     /// Describes how to pass a diagnostic argument of the given type.
     ///
@@ -629,6 +639,35 @@ namespace swift {
     DiagnosticState(DiagnosticState &&) = default;
     DiagnosticState &operator=(DiagnosticState &&) = default;
   };
+
+  class YAMLDiagnosticProvider {
+  public:
+    /// Diagnostic messages language code.
+    std::string diagnosticLocaleCode = "";
+    
+    /// Diagnostic messages directory path.
+    std::string diagnosticMessagesPath = "";
+
+    void setDiagnosticLocaleCode(std::string locale) {
+      printf("YAML %s\n", locale.c_str());
+      diagnosticLocaleCode = locale;
+    }
+    std::string getDiagnosticLocaleCode() {
+      return diagnosticLocaleCode;
+    }
+    
+    void setDiagnosticMessagesPath(std::string path) {
+      printf("YAML %s\n", path.c_str());
+      diagnosticMessagesPath = path;
+    }
+    std::string getDiagnosticMessagesPath() {
+      return diagnosticMessagesPath;
+    }
+
+    std::vector<DiagnosticNode> diagnostics;
+    YAMLDiagnosticProvider();
+    YAMLDiagnosticProvider(std::string locale, std::string path);
+  };
     
   /// Class responsible for formatting diagnostics and presenting them
   /// to the user.
@@ -658,6 +697,10 @@ namespace swift {
     llvm::DenseMap<const Decl *, SourceLoc> PrettyPrintedDeclarations;
 
     llvm::BumpPtrAllocator TransactionAllocator;
+
+    /// The diags from YAML file.
+    YAMLDiagnosticProvider YAMLDiagnostics;
+
     /// A set of all strings involved in current transactional chain.
     /// This is required because diagnostics are not directly emitted
     /// but rather stored until all transactions complete.
@@ -692,7 +735,8 @@ namespace swift {
   public:
     explicit DiagnosticEngine(SourceManager &SourceMgr)
         : SourceMgr(SourceMgr), ActiveDiagnostic(),
-          TransactionStrings(TransactionAllocator) {}
+          TransactionStrings(TransactionAllocator),
+          YAMLDiagnostics() {}
 
     /// hadAnyError - return true if any *error* diagnostics have been emitted.
     bool hadAnyError() const { return state.hadAnyError(); }
@@ -975,9 +1019,8 @@ namespace swift {
     void emitTentativeDiagnostics();
 
   public:
-    static std::string diagnosticStringFor(const DiagID id,
+    std::string diagnosticStringFor(const DiagID id,
                                            bool printDiagnosticName,
-                                           std::string diagnosticMessagesPath,
                                            std::string localeCode);   
     
     /// If there is no clear .dia file for a diagnostic, put it in the one

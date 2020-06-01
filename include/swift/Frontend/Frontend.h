@@ -423,6 +423,7 @@ class CompilerInstance {
   CompilerInvocation Invocation;
   SourceManager SourceMgr;
   DiagnosticEngine Diagnostics{SourceMgr};
+  YAMLDiagnosticProvider YAMLProvider;
   std::unique_ptr<ASTContext> Context;
   std::unique_ptr<Lowering::TypeConverter> TheSILTypes;
   std::unique_ptr<DiagnosticVerifier> DiagVerifier;

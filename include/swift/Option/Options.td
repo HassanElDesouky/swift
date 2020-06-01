@@ -375,7 +375,7 @@ def locale : Separate<["-"], "locale">,
   HelpText<"Choose a language for diagnostic messages">,
   MetaVarName<"<locale-code>">;
 def diagnostic_messages_path : Separate<["-"], "diagnostic-messages-path">,
-  Flags<[FrontendOption, DoesNotAffectIncrementalBuild]>,
+  Flags<[FrontendOption, DoesNotAffectIncrementalBuild, ArgumentIsPath]>,
   HelpText<"Path to diagnostic messages directory">,
   MetaVarName<"<path>">;
 

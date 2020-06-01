@@ -408,6 +408,12 @@ void CompilerInstance::setUpDiagnosticOptions() {
   }
   Diagnostics.setDiagnosticDocumentationPath(
       Invocation.getDiagnosticOptions().DiagnosticDocumentationPath);
+  // ****For testing******
+  YAMLProvider.setDiagnosticMessagesPath(
+      Invocation.getDiagnosticOptions().DiagnosticMessagesPath);
+  YAMLProvider.setDiagnosticLocaleCode(
+      Invocation.getDiagnosticOptions().DiagnosticLocaleCode);
+  // ****For testing******
   Diagnostics.setDiagnosticMessagesPath(
       Invocation.getDiagnosticOptions().DiagnosticMessagesPath);
   Diagnostics.setDiagnosticLocaleCode(

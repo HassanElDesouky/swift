@@ -17,15 +17,6 @@
 #include "llvm/Support/YAMLTraits.h"
 #include "DiagnosticList.cpp"
 
-namespace swift {
-
-struct DiagnosticNode {
-  DiagID diag_id;
-  std::string msg;
-};
-
-}
-
 namespace llvm {
 namespace yaml {
 

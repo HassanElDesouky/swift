@@ -34,6 +34,8 @@ using namespace llvm::opt;
 /// The path for Swift libraries in the OS on Darwin.
 #define DARWIN_OS_LIBRARY_PATH "/usr/lib/swift"
 
+static constexpr const char * const supportedLocaleCodes[] = {"en", "fr"};
+
 swift::CompilerInvocation::CompilerInvocation() {
   setTargetTriple(llvm::sys::getDefaultTargetTriple());
 }
@@ -58,7 +60,7 @@ void CompilerInvocation::setMainExecutablePath(StringRef Path) {
                           "diagnostics");
   DiagnosticOpts.DiagnosticDocumentationPath = std::string(DiagnosticDocsPath.str());
 
-    // Compute the path of the YAML diagnostic messages directory files
+  // Compute the path of the YAML diagnostic messages directory files
   // in the toolchain.
   llvm::SmallString<128> DiagnosticMessagesDir(Path);
   llvm::sys::path::remove_filename(DiagnosticMessagesDir);
@@ -896,26 +898,18 @@ static bool ParseDiagnosticArgs(DiagnosticOptions &Opts, ArgList &Args,
   }
   if (Arg *A = Args.getLastArg(OPT_locale)) {
     std::string localeCode = A->getValue();
-    // Create an unoredered set and initialize it with
-    // ISO639-1 language codes for fast lookup.
-    std::unordered_set<std::string> ISO639LocaleCodes({"ab","aa","af","ak",
-      "sq","am","ar","an","hy","as","av","ae","ay","az","bm","ba","eu","be",
-      "bn","bh","bi","bs","br","bg","my","ca","km","ch","ce","ny","zh","cu",
-      "cv","kw","co","cr","hr","cs","da","dv","nl","dz","en","eo","et","ee",
-      "fo","fj","fi","fr","ff","gd","gl","lg","ka","de","ki","el","kl","gn",
-      "gu","ht","ha","he","hz","hi","ho","hu","is","io","ig","id","ia","ie",
-      "iu","ik","ga","it","ja","jv","kn","kr","ks","kk","rw","kv","kg","ko",
-      "kj","ku","ky","lo","la","lv","lb","li","ln","lt","lu","mk","mg","ms",
-      "ml","mt","gv","mi","mr","mh","ro","mn","na","nv","nd","ng","ne","se",
-      "no","nb","nn","ii","oc","oj","or","om","os","pi","pa","ps","fa","pl",
-      "pt","qu","rm","rn","ru","sm","sg","sa","sc","sr","sn","sd","si","sk",
-      "sl","so","st","nr","es","su","sw","ss","sv","tl","ty","tg","ta","tt",
-      "te","th","bo","ti","to","ts","tn","tr","tk","tw","ug","uk","ur","uz",
-      "ve","vi","vo","wa","cy","fy","wo","xh","yi","yo","za","zu"});
-    
-    if (ISO639LocaleCodes.find(localeCode) == ISO639LocaleCodes.end())
-      Diags.diagnose(SourceLoc(), diag::error_invalid_locale_code);
-    else
+    if (std::end(supportedLocaleCodes) ==
+        std::find(std::begin(supportedLocaleCodes),
+                  std::end(supportedLocaleCodes), localeCode)) {
+      std::string validLocaleCodes = "";
+      for (auto code: supportedLocaleCodes) {
+        validLocaleCodes += code;
+        validLocaleCodes += ", ";
+      }
+      Diags.diagnose(SourceLoc(), diag::error_invalid_locale_code,
+                    validLocaleCodes.substr(0, validLocaleCodes.size()-2));
+      abort();
+    } else
       Opts.DiagnosticLocaleCode = localeCode;
   }
   assert(!(Opts.WarningsAsErrors && Opts.SuppressWarnings) &&
