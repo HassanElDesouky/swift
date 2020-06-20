@@ -629,7 +629,27 @@ namespace swift {
     DiagnosticState(DiagnosticState &&) = default;
     DiagnosticState &operator=(DiagnosticState &&) = default;
   };
-    
+
+  class LocalizationProducer {
+  public:
+    /// If the  message isn't available/localized in the current `yaml` file,
+    /// return the fallback default message.
+    virtual std::string getMessageOr(DiagID id,
+                                     std::string defaultMessage) const {
+      return defaultMessage;
+    }
+
+    virtual ~LocalizationProducer() {}
+  };
+
+  class YAMLLocalizationProducer final : public LocalizationProducer {
+  public:
+    std::vector<std::string> diagnostics;
+    explicit YAMLLocalizationProducer(std::string locale, std::string path);
+    std::string getMessageOr(DiagID id,
+                             std::string defaultMessage) const override;
+  };
+
   /// Class responsible for formatting diagnostics and presenting them
   /// to the user.
   class DiagnosticEngine {
@@ -662,6 +682,10 @@ namespace swift {
     /// This is required because diagnostics are not directly emitted
     /// but rather stored until all transactions complete.
     llvm::StringSet<llvm::BumpPtrAllocator &> TransactionStrings;
+
+    /// Diagnostic producer to handle the logic behind retriving a localized
+    /// diagnostic message.
+    std::unique_ptr<LocalizationProducer> localization;
 
     /// The number of open diagnostic transactions. Diagnostics are only
     /// emitted once all transactions have closed.
@@ -732,6 +756,11 @@ namespace swift {
     }
     StringRef getDiagnosticDocumentationPath() {
       return diagnosticDocumentationPath;
+    }
+
+    void setLocalization(std::string locale, std::string path) {
+      if (!locale.empty() && !path.empty())
+        localization = std::make_unique<YAMLLocalizationProducer>(locale, path);
     }
 
     void ignoreDiagnostic(DiagID id) {

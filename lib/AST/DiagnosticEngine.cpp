@@ -20,6 +20,7 @@
 #include "swift/AST/ASTPrinter.h"
 #include "swift/AST/Decl.h"
 #include "swift/AST/DiagnosticSuppression.h"
+#include "swift/AST/LocalizationFormat.h"
 #include "swift/AST/Module.h"
 #include "swift/AST/Pattern.h"
 #include "swift/AST/PrintOptions.h"
@@ -32,6 +33,7 @@
 #include "llvm/ADT/Twine.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/Format.h"
+#include "llvm/Support/YAMLParser.h"
 #include "llvm/Support/raw_ostream.h"
 
 using namespace swift;
@@ -309,6 +311,28 @@ void Diagnostic::addChildNote(Diagnostic &&D) {
   assert(storedDiagnosticInfos[(unsigned)ID].kind != DiagnosticKind::Note &&
          "Notes can't have children.");
   ChildNotes.push_back(std::move(D));
+}
+
+YAMLLocalizationProducer::YAMLLocalizationProducer(std::string locale,
+                                                   std::string path) {
+  llvm::SmallString<128> DiagnosticsFilePath(path);
+  llvm::sys::path::append(DiagnosticsFilePath, locale);
+  llvm::sys::path::replace_extension(DiagnosticsFilePath, ".yaml");
+  auto FileBufOrErr = llvm::MemoryBuffer::getFileOrSTDIN(DiagnosticsFilePath);
+  if (!FileBufOrErr)
+    llvm_unreachable("Failed to read yaml file");
+  llvm::MemoryBuffer *document = FileBufOrErr->get();
+  LocalizationInput yin(document->getBuffer());
+  yin >> diagnostics;
+}
+
+std::string
+YAMLLocalizationProducer::getMessageOr(DiagID id,
+                                       std::string defaultMessage) const {
+  std::string diagnosticMessage = diagnostics[(unsigned)id];
+  if (diagnosticMessage.empty())
+    return defaultMessage;
+  return diagnosticMessage;
 }
 
 bool DiagnosticEngine::isDiagnosticPointsToFirstBadToken(DiagID ID) const {
@@ -1011,8 +1035,16 @@ void DiagnosticEngine::emitDiagnostic(const Diagnostic &diagnostic) {
 
 const char *DiagnosticEngine::diagnosticStringFor(const DiagID id,
                                                   bool printDiagnosticName) {
+  // TODO: Print diagnostic names from `localization`.
   if (printDiagnosticName) {
     return debugDiagnosticStrings[(unsigned)id];
+  }
+  auto defaultMessage = diagnosticStrings[(unsigned)id];
+  if (localization) {
+    const std::string &localizedMessage =
+        localization.get()->getMessageOr(id, defaultMessage);
+    auto message = localizedMessage.c_str();
+    return message;
   }
   return diagnosticStrings[(unsigned)id];
 }
