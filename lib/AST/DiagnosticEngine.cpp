@@ -319,8 +319,12 @@ YAMLLocalizationProducer::YAMLLocalizationProducer(std::string locale,
   llvm::sys::path::append(DiagnosticsFilePath, locale);
   llvm::sys::path::replace_extension(DiagnosticsFilePath, ".yaml");
   auto FileBufOrErr = llvm::MemoryBuffer::getFileOrSTDIN(DiagnosticsFilePath);
+  // Resize Diags from YAML file to be the same size
+  // as diagnosticStrings from def files.
+  diagnostics.resize(LocalDiagID::NumDiags);
+  // Absence of localizations shouldn't crash the compiler.
   if (!FileBufOrErr)
-    llvm_unreachable("Failed to read yaml file");
+    return;
   llvm::MemoryBuffer *document = FileBufOrErr->get();
   LocalizationInput yin(document->getBuffer());
   yin >> diagnostics;

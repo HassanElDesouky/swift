@@ -64,18 +64,6 @@ class LocalizationInput : public llvm::yaml::Input {
                                  void>::type
   readYAML(llvm::yaml::IO &io, T &Seq, bool, Context &Ctx) {
     unsigned count = io.beginSequence();
-
-    // Reproduce the DiagIDs, as we want both the size and access to the raw ids
-    // themselves.
-    enum Diags : uint32_t {
-#define DIAG(KIND, ID, Options, Text, Signature) ID,
-#include "swift/AST/DiagnosticsAll.def"
-      NumDiags
-    };
-
-    // Resize Diags from YAML file to be the same size
-    // as diagnosticStrings from def files.
-    Seq.resize(Diags::NumDiags);
     for (unsigned i = 0; i < count; ++i) {
       void *SaveInfo;
       if (io.preflightElement(i, SaveInfo)) {

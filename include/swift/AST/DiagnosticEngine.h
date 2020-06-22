@@ -683,7 +683,7 @@ namespace swift {
     /// but rather stored until all transactions complete.
     llvm::StringSet<llvm::BumpPtrAllocator &> TransactionStrings;
 
-    /// Diagnostic producer to handle the logic behind retriving a localized
+    /// Diagnostic producer to handle the logic behind retrieving a localized
     /// diagnostic message.
     std::unique_ptr<LocalizationProducer> localization;
 
